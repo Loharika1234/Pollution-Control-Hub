@@ -62,6 +62,13 @@
   box-sizing: border-box;
 }
 
+.inline-icon {
+  display: inline-block;
+  vertical-align: -0.15em;
+  margin-right: 0.35em;
+  flex-shrink: 0;
+}
+
 html {
   scroll-behavior: smooth;
 }
@@ -238,6 +245,7 @@ a {
   padding: 0.3rem 0.75rem;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.16);
+  -webkit-backdrop-filter: blur(6px);
   backdrop-filter: blur(6px);
 }
 
@@ -269,8 +277,8 @@ a {
   padding: var(--sp-3) max(var(--sp-4), calc((100vw - 1180px) / 2));
   margin: 0 0 var(--sp-5);
   background: color-mix(in srgb, var(--panel) 86%, transparent);
-  backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
   box-shadow: 0 1px 0 var(--line);
 }
 
@@ -683,6 +691,7 @@ a {
   border-radius: var(--r-md);
   padding: var(--sp-4) var(--sp-4) var(--sp-2);
   box-shadow: var(--shadow-sm);
+  animation: rise-in 600ms var(--ease) both;
   transition:
     transform 220ms var(--ease),
     box-shadow 220ms var(--ease);
@@ -968,15 +977,43 @@ a {
     filter 180ms var(--ease);
   justify-self: start;
 }
+.filter-tabs {
+  display: flex;
+  gap: 12px;
+  margin: 20px 0;
+  flex-wrap: wrap;
+}
 .filter-tabs button {
-  border: none;
-  background: transparent;
-  color: var(--muted);
+  border: 2px solid var(--line);
+  background: var(--card);
+  color: var(--ink);
   font: inherit;
-  font-weight: 600;
-  padding: 0.4rem 0.9rem;
+  font-weight: 500;
+  font-size: 15px;
+  padding: 8px 15px;
+  border-radius: 10px;
   cursor: pointer;
-  transition: all 180ms var(--ease);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+  transition:
+    transform 260ms cubic-bezier(0.4, 0, 0.2, 1),
+    border-color 260ms cubic-bezier(0.4, 0, 0.2, 1),
+    background 260ms cubic-bezier(0.4, 0, 0.2, 1),
+    box-shadow 260ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+.filter-tabs button:hover {
+  transform: translateY(-2px);
+  border-color: var(--brand);
+}
+.filter-tabs button:active {
+  transform: scale(0.96);
+  transition-duration: 100ms;
+}
+.filter-tabs button.active {
+  border-color: var(--brand);
+  background: var(--brand);
+  color: white;
+  font-weight: 600;
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--brand) 30%, transparent);
 }
 .report-feed {
   display: grid;
@@ -989,10 +1026,16 @@ a {
   border-radius: var(--r-md);
   padding: var(--sp-4);
   box-shadow: var(--shadow-sm);
+  animation: rise-in 500ms var(--ease) both;
   transition:
     transform 220ms var(--ease),
     box-shadow 220ms var(--ease);
 }
+.report-card:nth-of-type(2) { animation-delay: 60ms; }
+.report-card:nth-of-type(3) { animation-delay: 120ms; }
+.report-card:nth-of-type(4) { animation-delay: 180ms; }
+.report-card:nth-of-type(5) { animation-delay: 240ms; }
+.report-card:nth-of-type(n+6) { animation-delay: 300ms; }
 
 .report-head {
   display: flex;
@@ -1565,8 +1608,7 @@ a {
 }
 
 .sim-preset-icon {
-  font-size: 1.6rem;
-  line-height: 1;
+  display: flex;
   margin-bottom: var(--sp-1);
 }
 .sim-preset-label {
@@ -1612,7 +1654,7 @@ a {
 }
 
 .sim-slider-emoji {
-  font-size: 1rem;
+  display: inline-flex;
 }
 .sim-slider-value {
   margin-left: auto;
@@ -2646,10 +2688,11 @@ a {
 }
 
 .mission-icon-lg {
-  font-size: 2.2rem;
   display: flex;
   align-items: center;
   justify-content: center;
+  color: var(--brand);
+  flex-shrink: 0;
 }
 
 .mission-select-info {
@@ -3019,7 +3062,8 @@ a {
 }
 
 .policy-icon {
-  font-size: 1.4rem;
+  display: flex;
+  color: var(--brand);
 }
 
 .policy-name {
@@ -3220,8 +3264,7 @@ a {
 }
 
 .results-emoji {
-  font-size: 3.5rem;
-  line-height: 1;
+  display: flex;
 }
 
 .results-banner h2 {
@@ -3309,7 +3352,9 @@ a {
 }
 
 .policy-item-icon {
-  font-size: 1.8rem;
+  display: flex;
+  color: var(--brand);
+  flex-shrink: 0;
 }
 
 .policy-item-info {
