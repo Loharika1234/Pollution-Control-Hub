@@ -266,10 +266,12 @@ export default function App() {
 
   useEffect(() => {
     const refreshTimer = setInterval(() => {
-      mutateAqi();
-      mutateCities();
-      mutateWind();
-      setRefreshCountdown(AUTO_REFRESH_SECONDS);
+      if (navigator.onLine) {
+        mutateAqi();
+        mutateCities();
+        mutateWind();
+        setRefreshCountdown(AUTO_REFRESH_SECONDS);
+      }
     }, AUTO_REFRESH_SECONDS * 1000);
 
     const countdownTimer = setInterval(() => {
@@ -293,15 +295,25 @@ export default function App() {
     setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
   };
 
-  const refreshNow = async () => {
+  const refreshNow = useCallback(async () => {
     if (isRefreshing) return;
     mutateAqi();
     mutateCities();
     mutateWind();
     setRefreshCountdown(AUTO_REFRESH_SECONDS);
-  };
+  }, [isRefreshing, mutateAqi, mutateCities, mutateWind]);
 
-  if (loading || !current) {
+  useEffect(() => {
+  const handleOnline = () => refreshNow();
+
+  window.addEventListener("online", handleOnline);
+
+  return () => {
+    window.removeEventListener("online", handleOnline);
+  };
+}, []);
+
+  if (loading && !error) {
     return (
       <main className="app-shell loading-state">
         <SectionNav activeSection={activeSection} onSectionChange={setActiveSection} theme={theme} onToggleTheme={toggleTheme} />
@@ -337,9 +349,9 @@ export default function App() {
         </div>
       )}
 
-      {error && <p className="error-banner">{error}</p>}
+          {error && <p className="error-banner">{error}</p>}
 
-      {activeSection === 'home' && (
+      {activeSection === 'home' && current && (
         <div className="content-grid">
           <Dashboard
             cityName={position.cityName}
@@ -353,11 +365,32 @@ export default function App() {
             confidenceScore={confidenceScore}
             dataCompleteness={dataCompleteness}
           />
-          <LocationMap center={position} nearbyPoints={nearbyPoints} confidenceScore={confidenceScore} windData={windData} />
-          <AlertsPanel cityName={position.cityName} current={current} confidenceScore={confidenceScore} dataCompleteness={dataCompleteness} exposureEstimate={exposureEstimate} />
+
+          <LocationMap
+            center={position}
+            nearbyPoints={nearbyPoints}
+            confidenceScore={confidenceScore}
+            windData={windData}
+          />
+
+          <AlertsPanel
+            cityName={position.cityName}
+            current={current}
+            confidenceScore={confidenceScore}
+            dataCompleteness={dataCompleteness}
+            exposureEstimate={exposureEstimate}
+          />
+
           <HealthAdvisory />
+
           <SolutionsAwareness />
-          <AnalyticsInsights analytics={analytics} trend={trend} timeRange={timeRange} />
+
+          <AnalyticsInsights
+            analytics={analytics}
+            trend={trend}
+            timeRange={timeRange}
+          />
+
           <ScenarioSimulator current={current} />
         </div>
       )}
