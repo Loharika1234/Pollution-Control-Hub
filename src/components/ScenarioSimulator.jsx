@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Car, Factory, TreePine, Zap, Globe, FlaskConical, CloudFog, TrafficCone, Sun, AlertTriangle } from 'lucide-react';
 import { CITY_COORDINATES } from '../constants/cities';
 import { fetchAirQualityByCoords, getAQIBand, estimateAQI } from '../services/airQualityService';
 
@@ -7,7 +8,7 @@ import { fetchAirQualityByCoords, getAQIBand, estimateAQI } from '../services/ai
 const PRESETS = [
   {
     id: 'traffic',
-    icon: '🚗',
+    icon: Car,
     label: 'Traffic Control',
     description: 'Odd-even driving, EV mandates',
     pm25: 10,
@@ -16,7 +17,7 @@ const PRESETS = [
   },
   {
     id: 'industrial',
-    icon: '🏭',
+    icon: Factory,
     label: 'Industrial Limits',
     description: 'Stricter stack emission caps',
     pm25: 25,
@@ -25,7 +26,7 @@ const PRESETS = [
   },
   {
     id: 'green',
-    icon: '🌳',
+    icon: TreePine,
     label: 'Green Cover',
     description: 'Urban forestry & park expansion',
     pm25: 10,
@@ -34,7 +35,7 @@ const PRESETS = [
   },
   {
     id: 'clean-fuel',
-    icon: '⚡',
+    icon: Zap,
     label: 'Clean Fuel Switch',
     description: 'Replace petrol/diesel with CNG/EV',
     pm25: 20,
@@ -43,7 +44,7 @@ const PRESETS = [
   },
   {
     id: 'combined',
-    icon: '🌐',
+    icon: Globe,
     label: 'Combined Policy',
     description: 'All interventions together',
     pm25: 50,
@@ -55,6 +56,7 @@ const PRESETS = [
 /* ─── Component ───────────────────────────────────────────────────────────── */
 
 export default function ScenarioSimulator({ current }) {
+  if (!current) { return null;}
   const [pm25Reduction, setPm25Reduction] = useState(0);
   const [no2Reduction, setNo2Reduction] = useState(0);
   const [o3Reduction, setO3Reduction] = useState(0);
@@ -129,13 +131,20 @@ export default function ScenarioSimulator({ current }) {
   const reducedNo2 = current.nitrogen_dioxide * (1 - no2Reduction / 100);
   const reducedO3 = current.ozone * (1 - o3Reduction / 100);
 
-  const estimatedAqi = estimateAQI(
-    Math.round(reducedPm25),
-    current.pm10,
-    Math.round(reducedNo2),
-    Math.round(reducedO3),
-    current.carbon_monoxide
-  );
+  // Fix for Issue #113: if no reduction has been applied (all sliders at 0%),
+  // Estimated AQI must equal Current AQI exactly instead of being recalculated
+  // via a different formula that can drift from the API-provided value.
+  const hasReduction = pm25Reduction > 0 || no2Reduction > 0 || o3Reduction > 0;
+
+  const estimatedAqi = hasReduction
+    ? estimateAQI(
+        Math.round(reducedPm25),
+        current.pm10,
+        Math.round(reducedNo2),
+        Math.round(reducedO3),
+        current.carbon_monoxide
+      )
+    : current.us_aqi;
 
   const currentBand = getAQIBand(current.us_aqi);
   const estimatedBand = getAQIBand(estimatedAqi);
@@ -150,13 +159,19 @@ export default function ScenarioSimulator({ current }) {
     const rPm25 = data.pm2_5 * (1 - pm25Reduction / 100);
     const rNo2 = data.nitrogen_dioxide * (1 - no2Reduction / 100);
     const rO3 = data.ozone * (1 - o3Reduction / 100);
-    const simAqi = estimateAQI(
-      Math.round(rPm25),
-      data.pm10,
-      Math.round(rNo2),
-      Math.round(rO3),
-      data.carbon_monoxide
-    );
+
+    const cityHasReduction = pm25Reduction > 0 || no2Reduction > 0 || o3Reduction > 0;
+
+    const simAqi = cityHasReduction
+      ? estimateAQI(
+          Math.round(rPm25),
+          data.pm10,
+          Math.round(rNo2),
+          Math.round(rO3),
+          data.carbon_monoxide
+        )
+      : data.us_aqi;
+
     const imp =
       data.us_aqi > 0
         ? Math.round(((data.us_aqi - simAqi) / data.us_aqi) * 100)
@@ -175,7 +190,7 @@ export default function ScenarioSimulator({ current }) {
     <section className="panel scenario-simulator" aria-labelledby="sim-heading">
       {/* ── Header ── */}
       <div className="panel-head">
-        <h2 id="sim-heading">🧪 Scenario Simulator</h2>
+        <h2 id="sim-heading"><FlaskConical className="inline-icon" size={22} aria-hidden="true" /> Scenario Simulator</h2>
         <p>
           Adjust sliders or pick a preset to see how interventions could improve AQI across cities.
         </p>
@@ -191,7 +206,7 @@ export default function ScenarioSimulator({ current }) {
             onClick={() => applyPreset(preset)}
             aria-pressed={activePreset === preset.id}
           >
-            <span className="sim-preset-icon">{preset.icon}</span>
+            <span className="sim-preset-icon"><preset.icon size={26} aria-hidden="true" /></span>
             <span className="sim-preset-label">{preset.label}</span>
             <span className="sim-preset-desc">{preset.description}</span>
             <span className="sim-preset-tags">
@@ -208,7 +223,7 @@ export default function ScenarioSimulator({ current }) {
         <SliderGroup
           id="slider-pm25"
           label="Reduce PM2.5"
-          emoji="🌫️"
+          icon={CloudFog}
           value={pm25Reduction}
           onChange={(v) => { setActivePreset(null); setPm25Reduction(v); }}
           current={current.pm2_5}
@@ -217,7 +232,7 @@ export default function ScenarioSimulator({ current }) {
         <SliderGroup
           id="slider-no2"
           label="Reduce NO₂"
-          emoji="🚦"
+          icon={TrafficCone}
           value={no2Reduction}
           onChange={(v) => { setActivePreset(null); setNo2Reduction(v); }}
           current={current.nitrogen_dioxide}
@@ -226,7 +241,7 @@ export default function ScenarioSimulator({ current }) {
         <SliderGroup
           id="slider-o3"
           label="Reduce Ozone"
-          emoji="☀️"
+          icon={Sun}
           value={o3Reduction}
           onChange={(v) => { setActivePreset(null); setO3Reduction(v); }}
           current={current.ozone}
@@ -304,7 +319,7 @@ export default function ScenarioSimulator({ current }) {
             if (cityErrorSet.has(cityName)) {
               return (
                 <div key={cityName} className="sim-city-result-card sim-error-card">
-                  <span>⚠️ Could not fetch {cityName} data.</span>
+                  <span><AlertTriangle className="inline-icon" size={16} aria-hidden="true" /> Could not fetch {cityName} data.</span>
                 </div>
               );
             }
@@ -376,12 +391,12 @@ export default function ScenarioSimulator({ current }) {
 
 /* ─── Sub-components ──────────────────────────────────────────────────────── */
 
-function SliderGroup({ id, label, emoji, value, onChange, current, unit }) {
+function SliderGroup({ id, label, icon: Icon, value, onChange, current, unit }) {
   const reduced = Math.round(current * (1 - value / 100));
   return (
     <div className="sim-slider-group">
       <label htmlFor={id}>
-        <span className="sim-slider-emoji" aria-hidden="true">{emoji}</span>
+        <span className="sim-slider-emoji" aria-hidden="true"><Icon size={18} /></span>
         {label}
         <span className="sim-slider-value">{value}%</span>
       </label>
