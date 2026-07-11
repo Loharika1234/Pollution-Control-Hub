@@ -680,6 +680,7 @@ a {
   transition:
     transform 220ms var(--ease),
     box-shadow 220ms var(--ease);
+  min-width: 0;
 }
 
 .kpi-card h3 {
@@ -726,6 +727,7 @@ a {
   transition:
     transform 220ms var(--ease),
     box-shadow 220ms var(--ease);
+  min-width: 0;
 }
 
 .chart-card h3 {
