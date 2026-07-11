@@ -59,6 +59,8 @@ export default function CommunityHub() {
   });
   const [fileInputKey, setFileInputKey] = useState(Date.now());
   const [uploadError, setUploadError] = useState('');
+  const [selectedFileName, setSelectedFileName] = useState("No file chosen");
+  const [previewImage, setPreviewImage] = useState("");
 
   useEffect(() => {
     try {
@@ -126,7 +128,14 @@ export default function CommunityHub() {
     };
 
     setReports((prev) => [newReport, ...prev]);
-    setForm({ title: "", description: "", image: "" });
+    setForm({
+      title: "",
+      description: "",
+      image: "",
+    });
+
+    setSelectedFileName("No file chosen");
+    setPreviewImage("");
     setFileInputKey(Date.now());
   };
 
@@ -134,6 +143,18 @@ export default function CommunityHub() {
     const file = event.target.files?.[0];
     if (!file) return;
 
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+    if (!allowedTypes.includes(file.type)) {
+      setUploadError('Invalid file format. Please select a JPEG, PNG, or WebP image.');
+      event.target.value = '';
+      setSelectedFileName("No file chosen");
+      setPreviewImage("");
+      setFileInputKey(Date.now());
+      return;
+    }
+
+    setSelectedFileName(file.name);
+    setPreviewImage(URL.createObjectURL(file));
     setUploadError('');
 
     if (file.size > MAX_IMAGE_SIZE_BYTES) {
@@ -141,6 +162,8 @@ export default function CommunityHub() {
         `Image too large (${(file.size / 1024 / 1024).toFixed(1)} MB). Maximum is 500 KB.`
       );
       event.target.value = '';
+      setSelectedFileName("No file chosen");
+      setPreviewImage("");
       setFileInputKey(Date.now());
       return;
     }
@@ -198,6 +221,17 @@ export default function CommunityHub() {
     setVotedIds((prev) => new Set(prev).add(id));
   };
 
+  const markAddressed = (id) => {
+    setReports((prev) =>
+      prev.map((report) => {
+        if (report.id !== id) return report;
+        if (!report.status.startsWith("Verified")) return report;
+
+        return { ...report, status: "Addressed" };
+      })
+    );
+  };
+
   const filteredReports = reports.filter((report) => {
     if (filter === "All") return true;
     if (filter === "Verified") return report.status.startsWith("Verified");
@@ -211,7 +245,7 @@ export default function CommunityHub() {
         <p>Report local pollution issues with evidence and crowd voting</p>
       </div>
 
-      <form className="community-form" onSubmit={onSubmit}>
+      <form className="community-form" id="report-form" onSubmit={onSubmit}>
         <input
           type="text"
           value={form.title}
@@ -227,50 +261,87 @@ export default function CommunityHub() {
             setForm((prev) => ({ ...prev, description: event.target.value }))
           }
         />
-        <input key={fileInputKey} type="file" accept="image/jpeg,image/png,image/webp" onChange={uploadImage} />
-        {uploadError && <p className="upload-error">{uploadError}</p>}
+        <div className="file-upload-container">
+          <label
+            htmlFor="community-file-upload"
+            className="file-upload-button"
+          >
+            📤 Choose File
+          </label>
+
+          <input
+            id="community-file-upload"
+            key={fileInputKey}
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            onChange={uploadImage}
+            className="file-input-hidden"
+          />
+
+          <div className="selected-file-container">
+            {previewImage && (
+              <img
+                src={previewImage}
+                alt="Selected evidence"
+                className="image-preview"
+              />
+            )}
+
+            <span className="selected-file-name">
+              {selectedFileName}
+            </span>
+          </div>
+        </div>
+
+        {uploadError && (
+          <p className="upload-error">
+            {uploadError}
+          </p>
+        )}
         <button type="submit">Submit Report</button>
       </form>
 
-   <div
-  className="filter-tabs"
-  style={{
-    display: "flex",
-    gap: "12px",
-    margin: "20px 0",
-    flexWrap: "wrap",
-  }}
->
-  {["All", "Pending", "Verified", "Addressed"].map((statusOption) => (
-    <button
-      key={statusOption}
-      type="button"
-      onClick={() => setFilter(statusOption)}
-      style={{
-        padding: "8px 15px",
-        borderRadius: "10px",
-        border: filter === statusOption ? "2px solid #0077b6" : "2px solid #dcdcdc",
-        backgroundColor:
-          filter === statusOption ? "#0077b6" : "#ffffff",
-        color: filter === statusOption ? "#ffffff" : "#333333",
-        cursor: "pointer",
-        fontWeight: filter === statusOption ? "600" : "500",
-        fontSize: "15px",
-        transition: "all 0.3s ease",
-        boxShadow:
-          filter === statusOption
-            ? "0 4px 12px rgba(0,119,182,0.3)"
-            : "0 2px 6px rgba(0,0,0,0.08)",
-      }}
-    >
-      {statusOption}
-    </button>
-  ))}
-</div>
+      <div className="filter-tabs">
+        {["All", "Pending", "Verified", "Addressed"].map((statusOption) => (
+          <button
+            key={statusOption}
+            type="button"
+            onClick={() => setFilter(statusOption)}
+            className={filter === statusOption ? "active" : ""}
+          >
+            {statusOption}
+          </button>
+        ))}
+      </div>
 
       <div className="report-feed">
-        {filteredReports.length === 0 ? (
-          <p>No reports yet. Be the first to raise an issue.</p>
+        {reports.length === 0 ? (
+          <div className="empty-state">
+            <div className="empty-state__icon" aria-hidden="true">
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                <path d="M12 9v4m0 4h.01M4.93 4.93a10 10 0 1 0 14.14 14.14A10 10 0 0 0 4.93 4.93Z" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </div>
+            <p className="empty-state__title">No reports yet</p>
+            <p className="empty-state__message">
+              Be the first to flag a pollution issue in your area.
+            </p>
+            <button
+              type="button"
+              className="empty-state__cta"
+              onClick={() =>
+                document
+                  .getElementById("report-form")
+                  ?.scrollIntoView({ behavior: "smooth", block: "center" })
+              }
+            >
+              Submit a report
+            </button>
+          </div>
+        ) : filteredReports.length === 0 ? (
+          <p className="empty-filter-message">
+            No reports match the "{filter}" filter.
+          </p>
         ) : (
           filteredReports.map((report) => (
             <article className="report-card" key={report.id}>
@@ -279,9 +350,16 @@ export default function CommunityHub() {
                   <h3>{report.title}</h3>
                   <span className="status-badge">{report.status}</span>
                 </div>
-                <button onClick={() => vote(report.id)} type="button" disabled={votedIds.has(report.id)}>
-                  {votedIds.has(report.id) ? 'Voted' : 'Upvote'} ({report.votes})
-                </button>
+                <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+                  {report.status.startsWith("Verified") && (
+                    <button type="button" onClick={() => markAddressed(report.id)}>
+                      Mark addressed
+                    </button>
+                  )}
+                  <button onClick={() => vote(report.id)} type="button" disabled={votedIds.has(report.id)}>
+                    {votedIds.has(report.id) ? 'Voted' : 'Upvote'} ({report.votes})
+                  </button>
+                </div>
               </div>
               <p>{report.description}</p>
               {report.image && <img src={report.image} alt={report.title} />}
@@ -291,7 +369,7 @@ export default function CommunityHub() {
                 <span
                   className={
                     report.status.startsWith("Verified") ||
-                    report.status === "Addressed"
+                      report.status === "Addressed"
                       ? "active"
                       : "inactive"
                   }
